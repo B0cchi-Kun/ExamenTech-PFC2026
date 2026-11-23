@@ -1,6 +1,12 @@
 {
-  "rewrites": [
-    { "source": "/termos", "destination": "/index.html" },
-    { "source": "/privacidade", "destination": "/index.html" }
+  "routes": [
+    {
+      "src": "^/api/(iniciar-tentativa|conteudo-tentativa|salvar-resposta-tentativa|encerrar-tentativa)/?$",
+      "dest": "/api/execucao-tentativa",
+      "transforms": [
+        { "type": "request.path", "op": "set", "args": "/api/$1" }
+      ]
+    },
+    { "src": "^/(termos|privacidade)/?$", "dest": "/index.html" }
   ]
 }

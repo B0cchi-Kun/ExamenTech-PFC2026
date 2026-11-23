@@ -3,7 +3,7 @@ import { createHash, randomUUID } from 'node:crypto'
 import test from 'node:test'
 import { createFotosTentativaHandler } from '../api/fotos-tentativa.ts'
 import { createLimpezaFotosHandler } from '../api/limpar-fotos-expiradas.ts'
-import { createIniciarTentativaHandler } from '../api/iniciar-tentativa.ts'
+import { createIniciarTentativaHandler } from '../server/iniciar-tentativa.ts'
 import { jpegDimensions, readPhotoBody } from '../scripts/lib/photoStorage.ts'
 
 import { EXAM_NOTICE_VERSION, PROVA_NOTICE_VERSION } from '../src/content/legalDocuments.ts'

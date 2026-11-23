@@ -256,9 +256,9 @@ npm run preview
 
 A hospedagem usa os arquivos estáticos gerados pelo Vite e as funções Node.js de [api](api). O Supabase continua responsável por Auth, banco, Storage, Realtime e limpeza de fotos.
 
-**Plano da Vercel:** existem **15 arquivos de rota em `api/`**. Nesse formato, cada arquivo gera uma função e o plano Hobby permite até 12 funções por deploy. O deploy completo atual exige capacidade para 15 funções; consolidar rotas para caber no Hobby seria uma alteração de código. Confira os [limites oficiais](https://vercel.com/docs/functions/runtimes#functions-created-per-deployment).
+O código gera **12 funções**, dentro do limite do plano Hobby. Iniciar uma tentativa, carregar as questões, salvar respostas e encerrar a tentativa usam a função `execucao-tentativa`. O [vercel.json](vercel.json) encaminha as quatro rotas para essa função e mantém os endereços usados pelo front-end. Confira os [limites da Vercel](https://vercel.com/docs/functions/runtimes#functions-created-per-deployment).
 
-1. Na Vercel, escolha **Add New → Project** e importe `ModusMartinez/ExamenTech-PFC2026`.
+1. Na Vercel, escolha **Add New → Project** e importe o repositório que contém a branch com o ajuste para o Hobby.
 2. Use as configurações abaixo. Neste repositório Git, `package.json` está na raiz; o caminho local `PROJETO/ExamenTech-PFC2026` não é uma subpasta do repositório remoto.
 
 | Configuração | Valor |
@@ -269,9 +269,9 @@ A hospedagem usa os arquivos estáticos gerados pelo Vite e as funções Node.js
 | Install Command | `npm ci` |
 | Build Command | `npm run build` |
 | Output Directory | `dist` |
-| Production Branch | `desenv`, para publicar a versão atual do projeto |
+| Production Branch | Branch com o ajuste para o Hobby, como `vercel-hobby` |
 
-3. Confira que o deploy selecionado usa a branch `desenv`. Se a importação tiver escolhido `main`, ajuste a Production Branch nas configurações do projeto e faça o deploy de `desenv`. Em **Environment Variables**, cadastre as variáveis da seção 4 nos ambientes utilizados (**Preview** e/ou **Production**). Configure as três opções `VITE_INVITES_ENABLED`, `VITE_MONITORED_EXAMS_ENABLED` e `VITE_EXAM_MANAGEMENT_ENABLED` como `true`. Para Provas, ambas as opções de fotos também precisam estar `true`, com a preparação do Supabase concluída.
+3. Confira que o deploy selecionado usa a branch com o ajuste para o Hobby. Nos projetos já criados, ajuste **Settings → Environments → Production → Branch Tracking**. Em **Environment Variables**, cadastre as variáveis da seção 4 nos ambientes utilizados (**Preview** e/ou **Production**). Configure as três opções `VITE_INVITES_ENABLED`, `VITE_MONITORED_EXAMS_ENABLED` e `VITE_EXAM_MANAGEMENT_ENABLED` como `true`. Para Provas, ambas as opções de fotos também precisam estar `true`, com a preparação do Supabase concluída.
 4. Mantenha as credenciais privadas sem prefixo `VITE_`. `.env.local` não é enviado automaticamente para o ambiente hospedado. O token da limpeza é necessário na Edge Function/Vault; `CRON_SECRET` só se aplica se a alternativa de limpeza da API for usada.
 5. Publique com **Deploy** e confirme no log a geração do front-end e das funções de `api/`. O [vercel.json](vercel.json) já encaminha `/termos` e `/privacidade` à aplicação.
 6. No Supabase Auth, atualize **Site URL** e **Redirect URLs** para a origem HTTPS publicada, por exemplo `https://seu-projeto.vercel.app`. Adicione esse hostname ao widget Turnstile e, se usar a rota própria, a `TURNSTILE_EXPECTED_HOSTNAMES`. Para previews, autorize somente os endereços de demonstração que serão usados. Veja [URLs de redirecionamento](https://supabase.com/docs/guides/auth/redirect-urls).

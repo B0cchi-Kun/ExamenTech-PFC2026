@@ -8,10 +8,7 @@ import questoesHandler from '../api/questoes.ts'
 import alternativasHandler from '../api/alternativas.ts'
 import publicarAvaliacaoHandler from '../api/publicar-avaliacao.ts'
 import minhasAvaliacoesHandler from '../api/minhas-avaliacoes.ts'
-import iniciarTentativaHandler from '../api/iniciar-tentativa.ts'
-import conteudoTentativaHandler from '../api/conteudo-tentativa.ts'
-import salvarRespostaTentativaHandler from '../api/salvar-resposta-tentativa.ts'
-import encerrarTentativaHandler from '../api/encerrar-tentativa.ts'
+import { tentativaHandlers } from '../api/execucao-tentativa.ts'
 import fotosTentativaHandler from '../api/fotos-tentativa.ts'
 import limpezaFotosHandler from '../api/limpar-fotos-expiradas.ts'
 import redefinirMfaHandler from '../api/redefinir-mfa.ts'
@@ -62,15 +59,12 @@ const server = createServer(async (incomingRequest, outgoingResponse) => {
       : url.pathname === '/api/redefinir-mfa' ? redefinirMfaHandler
       : url.pathname === '/api/avaliacoes' ? avaliacoesHandler
       : url.pathname === '/api/minhas-avaliacoes' ? minhasAvaliacoesHandler
-      : url.pathname === '/api/iniciar-tentativa' ? iniciarTentativaHandler
-      : url.pathname === '/api/conteudo-tentativa' ? conteudoTentativaHandler
-      : url.pathname === '/api/salvar-resposta-tentativa' ? salvarRespostaTentativaHandler
-      : url.pathname === '/api/encerrar-tentativa' ? encerrarTentativaHandler
       : url.pathname === '/api/fotos-tentativa' ? fotosTentativaHandler
       : url.pathname === '/api/limpar-fotos-expiradas' ? limpezaFotosHandler
       : url.pathname === '/api/questoes' ? questoesHandler
       : url.pathname === '/api/alternativas' ? alternativasHandler
-      : url.pathname === '/api/publicar-avaliacao' ? publicarAvaliacaoHandler : null
+      : url.pathname === '/api/publicar-avaliacao' ? publicarAvaliacaoHandler
+      : tentativaHandlers.get(url.pathname)
 
     if (!handler) {
       outgoingResponse.writeHead(404, { 'Content-Type': 'application/json' })

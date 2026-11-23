@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { prepararBancoCamera } from './helpers/bancoCamera.ts'
-import { createConteudoTentativaHandler } from '../api/conteudo-tentativa.ts'
+import { createConteudoTentativaHandler } from '../server/conteudo-tentativa.ts'
 import { EXAM_NOTICE_VERSION } from '../src/content/legalDocuments.ts'
 import type { ConteudoTentativa } from '../src/services/tentativaValidation.ts'
 

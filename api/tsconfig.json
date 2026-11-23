@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.api.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "rewriteRelativeImportExtensions": true
+  },
+  "include": ["./**/*.ts"]
+}

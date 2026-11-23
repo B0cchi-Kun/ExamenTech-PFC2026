@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { prepararBancoCamera } from './helpers/bancoCamera.ts'
-import { createSalvarRespostaTentativaHandler } from '../api/salvar-resposta-tentativa.ts'
+import { createSalvarRespostaTentativaHandler } from '../server/salvar-resposta-tentativa.ts'
 import type { RespostaTentativa } from '../src/services/respostaValidation.ts'
 
 import { EXAM_NOTICE_VERSION } from '../src/content/legalDocuments.ts'

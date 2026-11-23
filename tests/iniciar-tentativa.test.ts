@@ -4,8 +4,8 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 import { PGlite } from '@electric-sql/pglite'
 import { prepararBancoCamera } from './helpers/bancoCamera.ts'
-import { createIniciarTentativaHandler } from '../api/iniciar-tentativa.ts'
-import { createEncerrarTentativaHandler } from '../api/encerrar-tentativa.ts'
+import { createIniciarTentativaHandler } from '../server/iniciar-tentativa.ts'
+import { createEncerrarTentativaHandler } from '../server/encerrar-tentativa.ts'
 import { EXAM_NOTICE_VERSION } from '../src/content/legalDocuments.ts'
 
 const chaveExecucao = randomUUID()
