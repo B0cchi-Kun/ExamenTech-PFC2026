@@ -57,6 +57,13 @@ test('publicação: API integrada às regras e à auditoria no PostgreSQL local'
           return Response.json((await queryAs(id, 'SELECT id FROM public.turmas WHERE id=$1', [url.searchParams.get('id')?.slice(3)], aal)).rows)
         }
         if (url.pathname === '/rest/v1/avaliacoes') {
+          if (url.searchParams.get('select') === 'id,situacao,publicada_em') {
+            assert.equal(req.method, 'GET')
+            assert.equal(url.searchParams.get('professor_id'), `eq.${id}`)
+            assert.equal(url.searchParams.get('situacao'), 'eq.PUBLICADA')
+            return Response.json((await queryAs(id, `SELECT id,situacao,publicada_em FROM public.avaliacoes
+              WHERE id=$1 AND professor_id=$2 AND situacao='PUBLICADA'`, [url.searchParams.get('id')?.slice(3), id], aal)).rows)
+          }
           const publicadas = url.searchParams.get('situacao') === 'in.(PUBLICADA,CANCELADA)'
           assert.equal(url.searchParams.get('select'), 'id,turma_id,professor_id,titulo,tipo,inicio_em,fim_em,duracao_minutos,situacao,criado_em' + (publicadas ? ',publicada_em,cancelada_em' : ''))
           assert.equal(url.searchParams.get('order'), `${publicadas ? 'publicada_em.desc.nullslast' : 'criado_em.desc'},id.desc`)
@@ -213,7 +220,7 @@ test('publicação: API integrada às regras e à auditoria no PostgreSQL local'
     assert.deepEqual(await events(), before)
   })
 
-  await t.test('falha da auditoria desfaz publicação; perda da resposta não repete a transação', async () => {
+  await t.test('falha da auditoria desfaz a publicação; confirmação ambígua consulta o banco sem repetir a transação', async () => {
     const id = await criarAvaliacao()
     await criarQuestao(id, 'DISSERTATIVA')
     const before = await events()
@@ -227,18 +234,30 @@ test('publicação: API integrada às regras e à auditoria no PostgreSQL local'
     assert.deepEqual(await estado(id), { situacao: 'RASCUNHO', publicada_em: null })
     assert.deepEqual(await events(), before)
     await db.exec('DROP TRIGGER falhar_publicacao ON public.eventos_seguranca; DROP FUNCTION public.falhar_publicacao();')
-    const { transport } = apiFor(professor)
-    let chamadasRpc = 0
-    const handler = createPublicarAvaliacaoHandler(env, async (input, init) => {
-      const response = await transport(input, init)
-      if (new Request(input, init).url.includes('/rpc/')) { chamadasRpc++; throw new Error('Resposta perdida') }
-      return response
-    })
-    assert.equal((await handler.fetch(request({ avaliacao_id: id }))).status, 503)
-    assert.equal(chamadasRpc, 1)
-    assert.equal((await estado(id)).situacao, 'PUBLICADA')
-    assert.equal((await apiFor(professor).handler.fetch(request({ avaliacao_id: id }))).status, 409)
-    assert.equal((await db.query("SELECT id FROM public.eventos_seguranca WHERE recurso_id=$1 AND evento='AVALIACAO_PUBLICADA'", [id])).rows.length, 1)
+    const outraAvaliacao = await criarAvaliacao()
+    await criarQuestao(outraAvaliacao, 'DISSERTATIVA')
+    for (const avaliacao of [id, outraAvaliacao]) {
+      const { transport } = apiFor(professor)
+      let chamadasRpc = 0
+      const handler = createPublicarAvaliacaoHandler(env, async (input, init) => {
+        const response = await transport(input, init)
+        if (!new Request(input, init).url.includes('/rpc/')) return response
+        assert.equal(response.status, 200)
+        chamadasRpc++
+        if (avaliacao === id) throw new Error('Resposta perdida')
+        return Response.json({})
+      })
+      const response = await handler.fetch(request({ avaliacao_id: avaliacao }))
+      assert.equal(response.status, 200)
+      const gravada = await estado(avaliacao)
+      assert.equal(gravada.situacao, 'PUBLICADA')
+      assert.deepEqual((await response.json()).avaliacao, {
+        id: avaliacao, situacao: 'PUBLICADA', publicada_em: gravada.publicada_em?.toISOString(),
+      })
+      assert.equal(chamadasRpc, 1)
+      assert.equal((await apiFor(professor).handler.fetch(request({ avaliacao_id: avaliacao }))).status, 409)
+      assert.equal((await db.query("SELECT id FROM public.eventos_seguranca WHERE recurso_id=$1 AND evento='AVALIACAO_PUBLICADA'", [avaliacao])).rows.length, 1)
+    }
   })
 
   await t.test('entrada inválida é recusada antes de acessar Auth ou banco', async () => {

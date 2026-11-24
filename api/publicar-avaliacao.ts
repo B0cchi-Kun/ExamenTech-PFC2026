@@ -44,21 +44,28 @@ export function createPublicarAvaliacaoHandler(
         if (acesso.status) return jsonResponse(acesso.status, { message: acesso.message })
         if (acesso.perfil !== 'PROFESSOR') return jsonResponse(403, { message: 'Somente o professor autor pode publicar avaliações.' })
 
-        const { data, error } = await supabase.rpc('publicar_avaliacao', { p_avaliacao_id: avaliacaoId })
-        if (error) {
-          if (error.code === '42501') return jsonResponse(403, { message: 'Publicação exige professor autor ativo, organização ativa, sessão e MFA.' })
-          if (error.code === 'P0002') return jsonResponse(404, { message: 'Avaliação não encontrada ou acesso não autorizado.' })
-          if (error.code === '55000') return jsonResponse(409, { message: 'A turma está inativa ou a avaliação não está em rascunho.' })
-          if (error.code === '23514') return jsonResponse(400, { message: 'Confira a janela, a duração e as questões. Cada questão objetiva precisa de 2 a 5 alternativas distintas e uma correta.' })
-          return jsonResponse(503, { message: notConfirmed })
+        try {
+          const { data, error } = await supabase.rpc('publicar_avaliacao', { p_avaliacao_id: avaliacaoId })
+          if (error?.code === '42501') return jsonResponse(403, { message: 'Publicação exige professor autor ativo, organização ativa, sessão e MFA.' })
+          if (error?.code === 'P0002') return jsonResponse(404, { message: 'Avaliação não encontrada ou acesso não autorizado.' })
+          if (error?.code === '55000') return jsonResponse(409, { message: 'A turma está inativa ou a avaliação não está em rascunho.' })
+          if (error?.code === '23514') return jsonResponse(400, { message: 'Confira a janela, a duração e as questões. Cada questão objetiva precisa de 2 a 5 alternativas distintas e uma correta.' })
+
+          const avaliacao = error ? null : lerPublicacaoAvaliacao(data)
+          if (avaliacao?.id === avaliacaoId) return jsonResponse(200, { avaliacao })
+        } catch {
+          // O banco pode ter concluído a publicação antes de a resposta chegar.
         }
-        const avaliacao = lerPublicacaoAvaliacao(data)
-        if (!avaliacao || avaliacao.id !== avaliacaoId) {
-          return jsonResponse(503, { message: notConfirmed })
-        }
-        return jsonResponse(200, { avaliacao })
+
+        // Confere o estado com a sessão do autor, sem repetir a publicação.
+        const { data, error } = await supabase.from('avaliacoes')
+          .select('id,situacao,publicada_em').eq('id', avaliacaoId)
+          .eq('professor_id', acesso.usuarioId).eq('situacao', 'PUBLICADA').maybeSingle()
+        const avaliacao = error ? null : lerPublicacaoAvaliacao(data)
+        return avaliacao?.id === avaliacaoId
+          ? jsonResponse(200, { avaliacao })
+          : jsonResponse(503, { message: notConfirmed })
       } catch {
-        // A transação pode ter concluído antes da falha de conexão; não repetir o POST.
         return jsonResponse(503, { message: notConfirmed })
       }
     },
